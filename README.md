@@ -40,3 +40,26 @@ Clone the repository:
 
 ```bash
 git clone <repository-url>
+🏁 Objective
+
+The goal is to reveal all safe cells without hitting the bombs.
+
+The game ends when:
+
+💣 The player loses all lives by hitting bombs, or
+🎉 The player successfully reveals all safe cells.
+
+At the end of the game, the board is revealed and the player's score and game history are displayed.
+
+📂 Project Structure
+Game-Minesweeper/
+│
+├── minesweeper.py
+└── README.md
+🤝 Contributing
+
+Contributions and improvements are welcome!
+
+You can fork the repository, create a new branch, make your changes, and submit a pull request.
+
+Made with 🐍 Python and 💣
