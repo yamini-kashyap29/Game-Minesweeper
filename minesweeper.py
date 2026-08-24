@@ -1,130 +1,199 @@
 import random
-import re
+
 
 class Board:
-    def __init__(self,dim_size,num_bombs):
-        self.dim_size=dim_size
-        self.num_bombs=num_bombs
-        
-        self.board=self.make_new_board()
-        self.assign_values_to_board()
-        self.dug=set()
-        
-    def make_new_board(self):
-        board=[[None for _ in range(self.dim_size)] for _ in range(self.dim_size) ]
-        bombs_planted=0
-        while bombs_planted < self.num_bombs:
-         loc = random.randint(0, self.dim_size**2 - 1)
-         row = loc // self.dim_size
-         col = loc % self.dim_size
 
-         if board[row][col] == '*':
-          continue
+    def __init__(self, size, bombs):
+        self.size = size
+        self.bombs = bombs
+        self.board = self.create_board()
+        self.dug = set()
 
-         board[row][col] = '*'
-         bombs_planted += 1
-         
+    def create_board(self):
+
+        # Create an empty board
+        board = [[0 for _ in range(self.size)]
+                 for _ in range(self.size)]
+
+        # Choose random positions for bombs
+        bomb_positions = random.sample(
+            range(self.size * self.size),
+            self.bombs
+        )
+
+        # Place bombs
+        for position in bomb_positions:
+            row = position // self.size
+            col = position % self.size
+            board[row][col] = "*"
+
+        # Calculate neighboring bombs
+        for row in range(self.size):
+            for col in range(self.size):
+
+                if board[row][col] == "*":
+                    continue
+
+                count = 0
+
+                for r in range(max(0, row - 1),
+                               min(self.size, row + 2)):
+
+                    for c in range(max(0, col - 1),
+                                   min(self.size, col + 2)):
+
+                        if board[r][c] == "*":
+                            count += 1
+
+                board[row][col] = count
+
         return board
 
-    def assign_values_to_board(self):
-        for r in range(self.dim_size):
-            for c in range(self.dim_size):
-                if self.board[r][c]=='*':
-                    continue
-                self.board[r][c]=self.get_num_neighboring_bombs(r,c)
-                
-    def get_num_neighboring_bombs(self,row,col):
-        num_neighboring_bombs=0
-        for r in range(max(0,row-1),min(self.dim_size-1,(row+1))+1):
-            for c in range(max(0,col-1),min(self.dim_size-1,(col+1))+1):
-                if r==row and c==col:
-                    continue
-                if self.board[r][c]=='*':
-                    num_neighboring_bombs+=1
-        
-        return num_neighboring_bombs
-        
-    def dig(self,row,col):
-        self.dug.add((row, col))
-        if self.board[row][col]=='*':
-            return False
-        elif self.board[row][col]>0:
-            return True
-        
-        for r in range(max(0,row-1),min(self.dim_size-1,(row+1))+1):
-            for c in range(max(0,col-1),min(self.dim_size-1,(col+1))+1):
-                if (r,c) in self.dug:
-                    continue
-                self.dig(r,c)        
-                
-        return True
+    def display(self):
 
-    def __str__(self):
-        visible_board = [[None for _ in range(self.dim_size)] for _ in range(self.dim_size)]
-        for row in range(self.dim_size):
-            for col in range(self.dim_size):
-                if (row,col) in self.dug:
-                    visible_board[row][col] = str(self.board[row][col])
+        print("\n   ", end="")
+
+        # Column numbers
+        for col in range(self.size):
+            print(col, end=" ")
+
+        print()
+
+        # Separator
+        print("  " + "--" * self.size)
+
+        # Rows
+        for row in range(self.size):
+
+            print(row, "|", end=" ")
+
+            for col in range(self.size):
+
+                if (row, col) in self.dug:
+                    print(self.board[row][col], end=" ")
+
                 else:
-                    visible_board[row][col] = ' '
-        
-        # put this together in a string
-        string_rep = ''
-        # get max column widths for printing
-        widths = []
-        for idx in range(self.dim_size):
-            columns = map(lambda x: x[idx], visible_board)
-            widths.append(
-                len(
-                    max(columns, key = len)
-                )
+                    print("#", end=" ")
+
+            print()
+
+
+def choose_difficulty():
+
+    print("\n==============================")
+    print("       MINESWEEPER")
+    print("==============================")
+
+    print("\nChoose your difficulty:")
+    print("1. Easy")
+    print("2. Medium")
+    print("3. Hard")
+
+    while True:
+
+        choice = input("\nEnter your choice (1/2/3): ")
+
+        if choice == "1":
+            return 5, 5, 3
+
+        elif choice == "2":
+            return 8, 10, 3
+
+        elif choice == "3":
+            return 10, 20, 2
+
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
+
+
+def play():
+
+    # Get difficulty settings
+    size, bombs, lives = choose_difficulty()
+
+    # Create board
+    board = Board(size, bombs)
+
+    safe_cells = size * size - bombs
+
+    print("\nGame started!")
+    print(f"Board size : {size} x {size}")
+    print(f"Bombs      : {bombs}")
+    print(f"Lives      : {lives}")
+
+    # Game loop
+    while len(board.dug) < safe_cells and lives > 0:
+
+        board.display()
+
+        print(f"\n❤️ Lives remaining: {lives}")
+
+        try:
+
+            user_input = input(
+                "Enter row and column (example: 2 3): "
             )
 
-        # print the csv strings
-        indices = [i for i in range(self.dim_size)]
-        indices_row = '   '
-        cells = []
-        for idx, col in enumerate(indices):
-            format = '%-' + str(widths[idx]) + "s"
-            cells.append(format % (col))
-        indices_row += '  '.join(cells)
-        indices_row += '  \n'
-        
-        for i in range(len(visible_board)):
-            row = visible_board[i]
-            string_rep += f'{i} |'
-            cells = []
-            for idx, col in enumerate(row):
-                format = '%-' + str(widths[idx]) + "s"
-                cells.append(format % (col))
-            string_rep += ' |'.join(cells)
-            string_rep += ' |\n'
+            row, col = map(int, user_input.split())
 
-        str_len = int(len(string_rep) / self.dim_size)
-        string_rep = indices_row + '-'*str_len + '\n' + string_rep + '-'*str_len
+            # Check whether position is valid
+            if not (0 <= row < size and 0 <= col < size):
+                print("Invalid position. Try again.")
+                continue
 
-        return string_rep
+            # Check if already opened
+            if (row, col) in board.dug:
+                print("You already opened this cell.")
+                continue
 
-def play(dim_size=10, num_bombs=10):
-    board=Board(dim_size,num_bombs)
-    safe = True
-    while len(board.dug) < board.dim_size**2 - num_bombs:
-        print(board)
-        user_input=re.split(',(\\s)*',input("where would you like to dig? input in  row and column:"))
-        row, col =int(user_input[0]), int (user_input[-1])
-        if row<0 or row>=board.dim_size or col<0 or col>=dim_size:
-            print("invalid try again")
-            continue
-        
-        safe=board.dig(row,col)
-        if not safe:
-            break
-        
-    if safe:
-        print("congratssssss")
-    else:
-        print("sorryyy game over")
-        board.dug=[(r,c) for r in range(board.dim_size) for c in range(board.dim_size)]
-        print(board)
-        
+            # Check for bomb
+            if board.board[row][col] == "*":
+
+                lives -= 1
+
+                print("\n💣 BOOM! You hit a bomb!")
+
+                if lives > 0:
+                    print(f"You lost a life. {lives} lives remaining.")
+
+                    # Reveal the bomb
+                    board.dug.add((row, col))
+
+                else:
+                    print("\n💀 You have no lives left!")
+                    print("GAME OVER!")
+
+                    # Reveal entire board
+                    board.dug = {
+                        (r, c)
+                        for r in range(size)
+                        for c in range(size)
+                    }
+
+                    board.display()
+                    return
+
+            else:
+
+                # Safe cell
+                board.dug.add((row, col))
+
+                print("✅ Safe!")
+
+        except ValueError:
+
+            print(
+                "Invalid input. Please enter two numbers "
+                "like: 2 3"
+            )
+
+    # Check whether player won
+    if len(board.dug) >= safe_cells:
+
+        print("\n🎉 CONGRATULATIONS!")
+        print("You cleared all the safe cells!")
+
+        board.display()
+
+
 play()
