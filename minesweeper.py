@@ -23,7 +23,6 @@ BOLD = "\033[1m"
 # ==========================================
 
 def clear_screen():
-
     os.system("cls" if os.name == "nt" else "clear")
 
 
@@ -32,9 +31,7 @@ def loading_animation():
     print(f"\n{CYAN}Starting Minesweeper", end="")
 
     for _ in range(3):
-
         time.sleep(0.3)
-
         print(".", end="", flush=True)
 
     print(f" {GREEN}Ready!{RESET}\n")
@@ -49,9 +46,7 @@ def explosion_animation():
         "💥 EXPLOSION!",
         "⚠️ You hit a bomb!"
     ]:
-
         print(f"{RED}{BOLD}{message}{RESET}")
-
         time.sleep(0.4)
 
 
@@ -139,22 +134,26 @@ class Board:
 
     def dig(self, row, col):
 
+        # Do not dig flagged cells
         if (row, col) in self.flags:
             return None
 
+        # Already opened
         if (row, col) in self.dug:
             return True
 
+        # Bomb
         if self.board[row][col] == "*":
             return False
 
+        # Open cell
         self.dug.add((row, col))
 
-        # Stop if numbered cell
+        # If it has a number, stop
         if self.board[row][col] > 0:
             return True
 
-        # Open neighboring cells
+        # If value is 0, automatically open nearby cells
         for r in range(
             max(0, row - 1),
             min(self.size, row + 2)
@@ -166,7 +165,6 @@ class Board:
             ):
 
                 if (r, c) not in self.dug:
-
                     self.dig(r, c)
 
         return True
@@ -179,24 +177,16 @@ class Board:
         print("     ", end="")
 
         for col in range(self.size):
-
-            print(
-                f"{col:^3}",
-                end=""
-            )
+            print(f"{col:^3}", end="")
 
         print()
 
-        print(
-            "    " + "---" * self.size
-        )
+        print("    " + "---" * self.size)
 
+        # Board rows
         for row in range(self.size):
 
-            print(
-                f"{row:2} |",
-                end=""
-            )
+            print(f"{row:2} |", end="")
 
             for col in range(self.size):
 
@@ -226,9 +216,13 @@ class Board:
 
                     value = self.board[row][col]
 
+                    # 0 is explicitly displayed
                     if value == 0:
 
-                        print("   ", end="")
+                        print(
+                            f"{WHITE} 0 {RESET}",
+                            end=""
+                        )
 
                     elif value == 1:
 
@@ -260,6 +254,7 @@ class Board:
                             end=""
                         )
 
+                # Hidden cell
                 else:
 
                     print(
@@ -381,6 +376,45 @@ def calculate_score(
 
 
 # ==========================================
+# Game Instructions
+# ==========================================
+
+def show_instructions():
+
+    print(
+        f"""
+{BOLD}{CYAN}How to read the board:{RESET}
+
+{WHITE}0{RESET} → No bombs nearby
+{BLUE}1{RESET} → 1 bomb nearby
+{GREEN}2{RESET} → 2 bombs nearby
+{RED}3{RESET} → 3 bombs nearby
+{MAGENTA}4+{RESET} → 4 or more bombs nearby
+
+{RED}💣{RESET} → Bomb
+{YELLOW}🚩{RESET} → Flagged cell
+{CYAN}#{RESET} → Hidden cell
+
+{BOLD}Important:{RESET}
+When you open a {WHITE}0{RESET}, there are no bombs
+nearby, so the game automatically opens the
+surrounding safe cells. This is why you may see
+a large group of 0s and nearby numbers appear
+together.
+
+{BOLD}Commands:{RESET}
+{GREEN}d row col{RESET} → Dig a cell
+{YELLOW}f row col{RESET} → Flag / Unflag a cell
+{MAGENTA}q{RESET}         → Quit
+"""
+    )
+
+    input(
+        f"{CYAN}Press ENTER to start the game...{RESET}"
+    )
+
+
+# ==========================================
 # Game
 # ==========================================
 
@@ -393,6 +427,9 @@ def play():
     board = Board(size, bombs)
 
     safe_cells = size * size - bombs
+
+    # Explain numbers before starting
+    show_instructions()
 
     loading_animation()
 
@@ -533,7 +570,7 @@ Difficulty : {difficulty}
 
                     print(
                         f"{YELLOW}"
-                        f"🚩 Flag placed!"
+                        f"🚩 Flag placed! +25"
                         f"{RESET}"
                     )
 
