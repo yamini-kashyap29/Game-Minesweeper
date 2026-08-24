@@ -1,10 +1,11 @@
 import random
 import time
+import os
 
 
-# ==============================
+# ==========================================
 # Terminal Colors
-# ==============================
+# ==========================================
 
 RESET = "\033[0m"
 RED = "\033[91m"
@@ -17,29 +18,66 @@ MAGENTA = "\033[95m"
 BOLD = "\033[1m"
 
 
+# ==========================================
+# Utility Functions
+# ==========================================
+
+def clear_screen():
+
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def loading_animation():
+
+    print(f"\n{CYAN}Starting Minesweeper", end="")
+
+    for _ in range(3):
+
+        time.sleep(0.3)
+
+        print(".", end="", flush=True)
+
+    print(f" {GREEN}Ready!{RESET}\n")
+
+
+def explosion_animation():
+
+    print()
+
+    for message in [
+        "💣 BOOM!",
+        "💥 EXPLOSION!",
+        "⚠️ You hit a bomb!"
+    ]:
+
+        print(f"{RED}{BOLD}{message}{RESET}")
+
+        time.sleep(0.4)
+
+
+# ==========================================
+# Board
+# ==========================================
+
 class Board:
 
     def __init__(self, size, bombs):
+
         self.size = size
         self.bombs = bombs
 
         self.board = self.create_board()
 
-        # Cells that have been opened
         self.dug = set()
-
-        # Cells marked as possible bombs
         self.flags = set()
 
     def create_board(self):
 
-        # Create empty board
         board = [
             [0 for _ in range(self.size)]
             for _ in range(self.size)
         ]
 
-        # Randomly choose bomb positions
         bomb_positions = random.sample(
             range(self.size * self.size),
             self.bombs
@@ -55,6 +93,7 @@ class Board:
 
         # Calculate neighboring bombs
         for row in range(self.size):
+
             for col in range(self.size):
 
                 if board[row][col] == "*":
@@ -81,47 +120,41 @@ class Board:
 
     def toggle_flag(self, row, col):
 
-        # Cannot flag an already opened cell
         if (row, col) in self.dug:
             return False
 
-        # Remove flag if already flagged
         if (row, col) in self.flags:
 
             self.flags.remove((row, col))
+
             return True
 
-        # Add flag
         if len(self.flags) < self.bombs:
 
             self.flags.add((row, col))
+
             return True
 
         return False
 
     def dig(self, row, col):
 
-        # Cannot dig a flagged cell
         if (row, col) in self.flags:
             return None
 
-        # Already opened
         if (row, col) in self.dug:
             return True
 
-        # Bomb
         if self.board[row][col] == "*":
-
             return False
 
-        # Open the cell
         self.dug.add((row, col))
 
-        # If it contains a number, stop
+        # Stop if numbered cell
         if self.board[row][col] > 0:
             return True
 
-        # Automatically open surrounding empty cells
+        # Open neighboring cells
         for r in range(
             max(0, row - 1),
             min(self.size, row + 2)
@@ -133,6 +166,7 @@ class Board:
             ):
 
                 if (r, c) not in self.dug:
+
                     self.dig(r, c)
 
         return True
@@ -145,292 +179,531 @@ class Board:
         print("     ", end="")
 
         for col in range(self.size):
-            print(f"{col:^3}", end="")
+
+            print(
+                f"{col:^3}",
+                end=""
+            )
 
         print()
 
-        print("    " + "---" * self.size)
+        print(
+            "    " + "---" * self.size
+        )
 
-        # Board rows
         for row in range(self.size):
 
-            print(f"{row:2} |", end="")
+            print(
+                f"{row:2} |",
+                end=""
+            )
 
             for col in range(self.size):
 
                 position = (row, col)
 
-                if reveal and self.board[row][col] == "*":
+                # Reveal bombs
+                if (
+                    reveal
+                    and self.board[row][col] == "*"
+                ):
 
-                    print(f"{RED} 💣 {RESET}", end="")
+                    print(
+                        f"{RED} 💣 {RESET}",
+                        end=""
+                    )
 
+                # Flag
                 elif position in self.flags:
 
-                    print(f"{YELLOW} 🚩 {RESET}", end="")
+                    print(
+                        f"{YELLOW} 🚩 {RESET}",
+                        end=""
+                    )
 
+                # Opened cell
                 elif position in self.dug:
 
                     value = self.board[row][col]
 
                     if value == 0:
+
                         print("   ", end="")
 
                     elif value == 1:
-                        print(f"{BLUE} 1 {RESET}", end="")
+
+                        print(
+                            f"{BLUE} 1 {RESET}",
+                            end=""
+                        )
 
                     elif value == 2:
-                        print(f"{GREEN} 2 {RESET}", end="")
+
+                        print(
+                            f"{GREEN} 2 {RESET}",
+                            end=""
+                        )
 
                     elif value == 3:
-                        print(f"{RED} 3 {RESET}", end="")
+
+                        print(
+                            f"{RED} 3 {RESET}",
+                            end=""
+                        )
 
                     else:
-                        print(f"{MAGENTA}{value:^3}{RESET}", end="")
+
+                        print(
+                            f"{MAGENTA}"
+                            f"{value:^3}"
+                            f"{RESET}",
+                            end=""
+                        )
 
                 else:
 
-                    print(f"{CYAN} # {RESET}", end="")
+                    print(
+                        f"{CYAN} # {RESET}",
+                        end=""
+                    )
 
             print()
 
 
+# ==========================================
+# Difficulty
+# ==========================================
+
 def choose_difficulty():
 
-    print(f"""
-{BOLD}{CYAN}========================================
-           💣 MINESWEEPER
-========================================{RESET}
+    clear_screen()
 
-{YELLOW}Choose Difficulty:{RESET}
+    print(
+        f"""
+{BOLD}{CYAN}
+╔══════════════════════════════════════╗
+║          💣 MINESWEEPER 💣           ║
+╚══════════════════════════════════════╝
+{RESET}
+"""
+    )
 
-{GREEN}1.{RESET} Easy    → 5 × 5   | 5 bombs  | 3 lives
-{YELLOW}2.{RESET} Medium  → 8 × 8   | 10 bombs | 3 lives
-{RED}3.{RESET} Hard    → 10 × 10 | 20 bombs | 2 lives
-""")
+    print(
+        f"{GREEN}1. EASY{RESET}"
+        f"     5 × 5   | 5 bombs | 3 lives"
+    )
+
+    print(
+        f"{YELLOW}2. MEDIUM{RESET}"
+        f"   8 × 8   | 10 bombs | 3 lives"
+    )
+
+    print(
+        f"{RED}3. HARD{RESET}"
+        f"     10 × 10 | 20 bombs | 2 lives"
+    )
 
     while True:
 
-        choice = input("Enter your choice (1/2/3): ")
+        choice = input(
+            "\nSelect difficulty (1/2/3): "
+        )
 
         if choice == "1":
-            return 5, 5, 3
+
+            return (
+                5,
+                5,
+                3,
+                "Easy",
+                100
+            )
 
         elif choice == "2":
-            return 8, 10, 3
+
+            return (
+                8,
+                10,
+                3,
+                "Medium",
+                200
+            )
 
         elif choice == "3":
-            return 10, 20, 2
+
+            return (
+                10,
+                20,
+                2,
+                "Hard",
+                300
+            )
 
         else:
+
             print(
-                f"{RED}Invalid choice. "
-                f"Please enter 1, 2, or 3.{RESET}"
+                f"{RED}"
+                f"Invalid choice."
+                f"{RESET}"
             )
 
 
+# ==========================================
+# Score
+# ==========================================
+
+def calculate_score(
+    base_score,
+    time_taken,
+    lives,
+    flags
+):
+
+    score = base_score
+
+    # Time bonus
+    time_bonus = max(
+        0,
+        500 - (time_taken * 5)
+    )
+
+    # Life bonus
+    life_bonus = lives * 100
+
+    # Flag bonus
+    flag_bonus = flags * 25
+
+    score += time_bonus
+    score += life_bonus
+    score += flag_bonus
+
+    return score
+
+
+# ==========================================
+# Game
+# ==========================================
+
 def play():
 
-    size, bombs, lives = choose_difficulty()
+    size, bombs, lives, difficulty, base_score = (
+        choose_difficulty()
+    )
 
     board = Board(size, bombs)
 
     safe_cells = size * size - bombs
 
+    loading_animation()
+
     start_time = time.time()
 
-    print(f"""
-{GREEN}{BOLD}Game Started! 🎮{RESET}
+    score = 0
 
-{WHITE}Board  : {size} × {size}
-Bombs  : {bombs}
-Lives  : {lives}
+    while (
+        len(board.dug) < safe_cells
+        and lives > 0
+    ):
+
+        clear_screen()
+
+        elapsed_time = int(
+            time.time() - start_time
+        )
+
+        bombs_left = (
+            bombs - len(board.flags)
+        )
+
+        progress = (
+            len(board.dug) / safe_cells
+        ) * 100
+
+        print(
+            f"""
+{BOLD}{CYAN}
+╔══════════════════════════════════════════╗
+║             💣 MINESWEEPER 💣            ║
+╚══════════════════════════════════════════╝
 {RESET}
-Commands:
-  {CYAN}d row col{RESET} → Dig
+Difficulty : {difficulty}
+❤️ Lives    : {RED}{lives}{RESET}
+💣 Bombs    : {YELLOW}{bombs_left}{RESET}
+⏱️ Time     : {CYAN}{elapsed_time}s{RESET}
+🏆 Score    : {GREEN}{score}{RESET}
+📊 Progress : {progress:.1f}%
+"""
+        )
+
+        board.display()
+
+        print(
+            f"""
+{CYAN}Commands:{RESET}
+
+  {GREEN}d row col{RESET} → Dig
   {YELLOW}f row col{RESET} → Flag / Unflag
   {MAGENTA}q{RESET}         → Quit
-""")
+"""
+        )
 
-    try:
-
-        while len(board.dug) < safe_cells and lives > 0:
-
-            board.display()
-
-            elapsed_time = int(time.time() - start_time)
-
-            bombs_left = bombs - len(board.flags)
-
-            print(
-                f"\n{RED}❤️ Lives: {lives}{RESET}"
-                f"   {YELLOW}💣 Bombs left: {bombs_left}{RESET}"
-                f"   {CYAN}⏱️ Time: {elapsed_time}s{RESET}"
-            )
+        try:
 
             command = input(
-                "\nEnter command: "
+                "Enter command: "
             ).strip().lower()
 
-            if command == "q":
+        except KeyboardInterrupt:
 
-                print(
-                    f"\n{YELLOW}Game exited. "
-                    f"Thanks for playing! 👋{RESET}"
-                )
+            print(
+                f"\n\n{YELLOW}"
+                f"Game interrupted. Goodbye! 👋"
+                f"{RESET}"
+            )
 
-                return
+            return
 
-            parts = command.split()
+        if command == "q":
 
-            if len(parts) != 3:
+            print(
+                f"\n{YELLOW}"
+                f"Thanks for playing! 👋"
+                f"{RESET}"
+            )
 
-                print(
-                    f"{RED}Invalid command.{RESET} "
-                    "Example: d 2 3"
-                )
+            return
 
-                continue
+        parts = command.split()
 
-            action = parts[0]
+        if len(parts) != 3:
 
-            try:
+            print(
+                f"{RED}"
+                f"Invalid command."
+                f"{RESET}"
+            )
 
-                row = int(parts[1])
-                col = int(parts[2])
+            time.sleep(1)
 
-            except ValueError:
+            continue
 
-                print(
-                    f"{RED}Row and column must be numbers.{RESET}"
-                )
+        action = parts[0]
 
-                continue
+        try:
 
-            if not (
-                0 <= row < size
-                and 0 <= col < size
-            ):
+            row = int(parts[1])
+            col = int(parts[2])
 
-                print(
-                    f"{RED}Invalid position.{RESET}"
-                )
+        except ValueError:
 
-                continue
+            print(
+                f"{RED}"
+                f"Row and column must be numbers."
+                f"{RESET}"
+            )
 
-            # ==============================
-            # Flag
-            # ==============================
+            time.sleep(1)
 
-            if action == "f":
+            continue
 
-                if board.toggle_flag(row, col):
+        if not (
+            0 <= row < size
+            and 0 <= col < size
+        ):
 
-                    if (row, col) in board.flags:
+            print(
+                f"{RED}"
+                f"Invalid position."
+                f"{RESET}"
+            )
 
-                        print(
-                            f"{YELLOW}🚩 Cell flagged!{RESET}"
-                        )
+            time.sleep(1)
 
-                    else:
+            continue
 
-                        print(
-                            f"{GREEN}Flag removed.{RESET}"
-                        )
+        # ==================================
+        # FLAG
+        # ==================================
+
+        if action == "f":
+
+            if board.toggle_flag(row, col):
+
+                if (row, col) in board.flags:
+
+                    print(
+                        f"{YELLOW}"
+                        f"🚩 Flag placed!"
+                        f"{RESET}"
+                    )
+
+                    score += 25
 
                 else:
 
                     print(
-                        f"{RED}Cannot flag this cell.{RESET}"
-                    )
-
-            # ==============================
-            # Dig
-            # ==============================
-
-            elif action == "d":
-
-                result = board.dig(row, col)
-
-                if result is False:
-
-                    lives -= 1
-
-                    print(
-                        f"\n{RED}{BOLD}"
-                        f"💥 BOOM! You hit a bomb!"
+                        f"{GREEN}"
+                        f"🚩 Flag removed."
                         f"{RESET}"
                     )
 
-                    print(
-                        f"{YELLOW}"
-                        f"You lost one life."
-                        f"{RESET}"
-                    )
-
-                    # Don't open the bomb yet
-                    if lives == 0:
-
-                        print(
-                            f"\n{RED}{BOLD}"
-                            f"💀 GAME OVER!"
-                            f"{RESET}"
-                        )
-
-                        board.display(reveal=True)
-
-                        return
-
-                elif result is None:
-
-                    print(
-                        f"{YELLOW}"
-                        f"🚩 Remove the flag before digging."
-                        f"{RESET}"
-                    )
-
-                else:
-
-                    print(
-                        f"{GREEN}✅ Safe!{RESET}"
+                    score = max(
+                        0,
+                        score - 25
                     )
 
             else:
 
                 print(
-                    f"{RED}Unknown command.{RESET}"
+                    f"{RED}"
+                    f"Cannot flag this cell."
+                    f"{RESET}"
                 )
 
-        # ==============================
-        # Win
-        # ==============================
+            time.sleep(0.7)
 
-        if len(board.dug) >= safe_cells:
+        # ==================================
+        # DIG
+        # ==================================
 
-            elapsed_time = int(
-                time.time() - start_time
+        elif action == "d":
+
+            result = board.dig(
+                row,
+                col
             )
 
+            # Bomb
+            if result is False:
+
+                explosion_animation()
+
+                lives -= 1
+
+                score = max(
+                    0,
+                    score - 100
+                )
+
+                print(
+                    f"{YELLOW}"
+                    f"❤️ Lives remaining: "
+                    f"{lives}"
+                    f"{RESET}"
+                )
+
+                if lives == 0:
+
+                    clear_screen()
+
+                    print(
+                        f"""
+{RED}{BOLD}
+╔══════════════════════════════════╗
+║          💀 GAME OVER 💀         ║
+╚══════════════════════════════════╝
+{RESET}
+"""
+                    )
+
+                    board.display(
+                        reveal=True
+                    )
+
+                    print(
+                        f"\nFinal Score: "
+                        f"{score}"
+                    )
+
+                    return
+
+                time.sleep(1)
+
+            # Flagged cell
+            elif result is None:
+
+                print(
+                    f"{YELLOW}"
+                    f"🚩 Remove the flag first."
+                    f"{RESET}"
+                )
+
+                time.sleep(0.7)
+
+            # Safe
+            else:
+
+                score += 50
+
+                print(
+                    f"{GREEN}"
+                    f"✅ Safe! +50 points"
+                    f"{RESET}"
+                )
+
+                time.sleep(0.5)
+
+        else:
+
             print(
-                f"\n{GREEN}{BOLD}"
-                f"🎉 CONGRATULATIONS!"
+                f"{RED}"
+                f"Unknown command."
                 f"{RESET}"
             )
 
-            print(
-                f"You cleared all safe cells "
-                f"in {elapsed_time} seconds!"
-            )
+            time.sleep(0.7)
 
-            board.display()
+    # ======================================
+    # WIN
+    # ======================================
 
+    if len(board.dug) >= safe_cells:
 
-    except KeyboardInterrupt:
+        elapsed_time = int(
+            time.time() - start_time
+        )
+
+        final_score = calculate_score(
+            base_score + score,
+            elapsed_time,
+            lives,
+            len(board.flags)
+        )
+
+        clear_screen()
 
         print(
-            f"\n\n{YELLOW}"
-            f"Game interrupted. Goodbye! 👋"
-            f"{RESET}"
+            f"""
+{GREEN}{BOLD}
+╔══════════════════════════════════════╗
+║          🎉 YOU WON! 🎉              ║
+╚══════════════════════════════════════╝
+{RESET}
+"""
+        )
+
+        board.display()
+
+        print(
+            f"""
+{CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}
+
+🏆 Final Score : {BOLD}{final_score}{RESET}
+⏱️ Time        : {elapsed_time} seconds
+❤️ Lives Left  : {lives}
+🚩 Flags Used  : {len(board.flags)}
+💣 Bombs       : {bombs}
+
+{GREEN}Congratulations! 🎉{RESET}
+
+{CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}
+"""
         )
 
 
-play()
+# ==========================================
+# Start Game
+# ==========================================
+
+if __name__ == "__main__":
+    play()
