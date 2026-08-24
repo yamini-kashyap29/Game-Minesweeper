@@ -51,7 +51,30 @@ def explosion_animation():
 
 
 # ==========================================
-# Board
+# Game History
+# ==========================================
+
+def show_history(game_history):
+
+    print("\n")
+    print(f"{BOLD}{CYAN}📜 GAME HISTORY{RESET}")
+    print("-------------------------")
+
+    if not game_history:
+        print("No moves were made.")
+
+    else:
+        for number, action in enumerate(
+            game_history,
+            start=1
+        ):
+            print(f"{number}. {action}")
+
+    print("-------------------------")
+
+
+# ==========================================
+# Board Class
 # ==========================================
 
 class Board:
@@ -63,16 +86,21 @@ class Board:
 
         self.board = self.create_board()
 
+        # Opened cells
         self.dug = set()
+
+        # Flagged cells
         self.flags = set()
 
     def create_board(self):
 
+        # Create empty board
         board = [
             [0 for _ in range(self.size)]
             for _ in range(self.size)
         ]
 
+        # Choose random bomb positions
         bomb_positions = random.sample(
             range(self.size * self.size),
             self.bombs
@@ -115,15 +143,18 @@ class Board:
 
     def toggle_flag(self, row, col):
 
+        # Cannot flag an opened cell
         if (row, col) in self.dug:
             return False
 
+        # Remove existing flag
         if (row, col) in self.flags:
 
             self.flags.remove((row, col))
 
             return True
 
+        # Add new flag
         if len(self.flags) < self.bombs:
 
             self.flags.add((row, col))
@@ -134,7 +165,7 @@ class Board:
 
     def dig(self, row, col):
 
-        # Do not dig flagged cells
+        # Cannot dig a flagged cell
         if (row, col) in self.flags:
             return None
 
@@ -146,14 +177,14 @@ class Board:
         if self.board[row][col] == "*":
             return False
 
-        # Open cell
+        # Open the cell
         self.dug.add((row, col))
 
-        # If it has a number, stop
+        # Numbered cell
         if self.board[row][col] > 0:
             return True
 
-        # If value is 0, automatically open nearby cells
+        # If value is 0, open nearby cells
         for r in range(
             max(0, row - 1),
             min(self.size, row + 2)
@@ -192,7 +223,7 @@ class Board:
 
                 position = (row, col)
 
-                # Reveal bombs
+                # Show bombs when game ends
                 if (
                     reveal
                     and self.board[row][col] == "*"
@@ -203,7 +234,7 @@ class Board:
                         end=""
                     )
 
-                # Flag
+                # Show flags
                 elif position in self.flags:
 
                     print(
@@ -211,12 +242,11 @@ class Board:
                         end=""
                     )
 
-                # Opened cell
+                # Show opened cells
                 elif position in self.dug:
 
                     value = self.board[row][col]
 
-                    # 0 is explicitly displayed
                     if value == 0:
 
                         print(
@@ -266,7 +296,7 @@ class Board:
 
 
 # ==========================================
-# Difficulty
+# Difficulty Selection
 # ==========================================
 
 def choose_difficulty():
@@ -306,33 +336,15 @@ def choose_difficulty():
 
         if choice == "1":
 
-            return (
-                5,
-                5,
-                3,
-                "Easy",
-                100
-            )
+            return 5, 5, 3, "Easy", 100
 
         elif choice == "2":
 
-            return (
-                8,
-                10,
-                3,
-                "Medium",
-                200
-            )
+            return 8, 10, 3, "Medium", 200
 
         elif choice == "3":
 
-            return (
-                10,
-                20,
-                2,
-                "Hard",
-                300
-            )
+            return 10, 20, 2, "Hard", 300
 
         else:
 
@@ -341,38 +353,6 @@ def choose_difficulty():
                 f"Invalid choice."
                 f"{RESET}"
             )
-
-
-# ==========================================
-# Score
-# ==========================================
-
-def calculate_score(
-    base_score,
-    time_taken,
-    lives,
-    flags
-):
-
-    score = base_score
-
-    # Time bonus
-    time_bonus = max(
-        0,
-        500 - (time_taken * 5)
-    )
-
-    # Life bonus
-    life_bonus = lives * 100
-
-    # Flag bonus
-    flag_bonus = flags * 25
-
-    score += time_bonus
-    score += life_bonus
-    score += flag_bonus
-
-    return score
 
 
 # ==========================================
@@ -396,13 +376,16 @@ def show_instructions():
 {CYAN}#{RESET} → Hidden cell
 
 {BOLD}Important:{RESET}
+
 When you open a {WHITE}0{RESET}, there are no bombs
 nearby, so the game automatically opens the
-surrounding safe cells. This is why you may see
-a large group of 0s and nearby numbers appear
-together.
+surrounding safe cells.
+
+This is why several 0s and nearby numbers
+can appear together.
 
 {BOLD}Commands:{RESET}
+
 {GREEN}d row col{RESET} → Dig a cell
 {YELLOW}f row col{RESET} → Flag / Unflag a cell
 {MAGENTA}q{RESET}         → Quit
@@ -415,7 +398,39 @@ together.
 
 
 # ==========================================
-# Game
+# Score Calculation
+# ==========================================
+
+def calculate_score(
+    base_score,
+    time_taken,
+    lives,
+    flags
+):
+
+    score = base_score
+
+    # Time bonus
+    time_bonus = max(
+        0,
+        500 - (time_taken * 5)
+    )
+
+    # Remaining lives bonus
+    life_bonus = lives * 100
+
+    # Flag bonus
+    flag_bonus = flags * 25
+
+    score += time_bonus
+    score += life_bonus
+    score += flag_bonus
+
+    return score
+
+
+# ==========================================
+# Main Game
 # ==========================================
 
 def play():
@@ -428,7 +443,10 @@ def play():
 
     safe_cells = size * size - bombs
 
-    # Explain numbers before starting
+    # Store all player actions
+    game_history = []
+
+    # Explain the game
     show_instructions()
 
     loading_animation()
@@ -498,8 +516,11 @@ Difficulty : {difficulty}
                 f"{RESET}"
             )
 
+            show_history(game_history)
+
             return
 
+        # Quit
         if command == "q":
 
             print(
@@ -507,6 +528,8 @@ Difficulty : {difficulty}
                 f"Thanks for playing! 👋"
                 f"{RESET}"
             )
+
+            show_history(game_history)
 
             return
 
@@ -543,6 +566,7 @@ Difficulty : {difficulty}
 
             continue
 
+        # Check position
         if not (
             0 <= row < size
             and 0 <= col < size
@@ -568,25 +592,33 @@ Difficulty : {difficulty}
 
                 if (row, col) in board.flags:
 
+                    score += 25
+
+                    game_history.append(
+                        f"Flagged ({row}, {col}) 🚩"
+                    )
+
                     print(
                         f"{YELLOW}"
                         f"🚩 Flag placed! +25"
                         f"{RESET}"
                     )
 
-                    score += 25
-
                 else:
+
+                    score = max(
+                        0,
+                        score - 25
+                    )
+
+                    game_history.append(
+                        f"Removed flag ({row}, {col})"
+                    )
 
                     print(
                         f"{GREEN}"
                         f"🚩 Flag removed."
                         f"{RESET}"
-                    )
-
-                    score = max(
-                        0,
-                        score - 25
                     )
 
             else:
@@ -622,6 +654,10 @@ Difficulty : {difficulty}
                     score - 100
                 )
 
+                game_history.append(
+                    f"Dug ({row}, {col}) → Bomb 💣"
+                )
+
                 print(
                     f"{YELLOW}"
                     f"❤️ Lives remaining: "
@@ -629,6 +665,7 @@ Difficulty : {difficulty}
                     f"{RESET}"
                 )
 
+                # Game over
                 if lives == 0:
 
                     clear_screen()
@@ -648,8 +685,11 @@ Difficulty : {difficulty}
                     )
 
                     print(
-                        f"\nFinal Score: "
-                        f"{score}"
+                        f"\nFinal Score: {score}"
+                    )
+
+                    show_history(
+                        game_history
                     )
 
                     return
@@ -665,12 +705,14 @@ Difficulty : {difficulty}
                     f"{RESET}"
                 )
 
-                time.sleep(0.7)
-
-            # Safe
+            # Safe cell
             else:
 
                 score += 50
+
+                game_history.append(
+                    f"Dug ({row}, {col}) → Safe ✅"
+                )
 
                 print(
                     f"{GREEN}"
@@ -736,6 +778,9 @@ Difficulty : {difficulty}
 {CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RESET}
 """
         )
+
+        # Show game history
+        show_history(game_history)
 
 
 # ==========================================
